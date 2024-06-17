@@ -5,14 +5,29 @@
   outputs = { self, nixpkgs, utils }: utils.lib.eachDefaultSystem (system:
     let
       pkgs = nixpkgs.legacyPackages.${system};
-      # watchman command that watches a list of files and executes a command on them when they change
-      diag = pkgs.writeShellScriptBin "watch-diagram" ''
+      diag = let 
+        python3 = (pkgs.python3.withPackages (python-pkgs: [
+                    python-pkgs.diagrams
+                  ]));
+
+        in pkgs.writeShellApplication {
+        name = "watch-diagram";
+        text = ''
         #!/bin/sh
-        ${pkgs.python3Packages.pywatchman}/bin/watchman-wait --max-events 0 -p "$1" -- . | while read line; do  ${pkgs.python3}/bin/python $line ;  clear; ${pkgs.viu}/bin/viu $line.diag.png ; done  
+        ${pkgs.python3Packages.pywatchman}/bin/watchman-wait --max-events 0 -p "$1" -- . | while read -r line; do  ${python3}/bin/python "$line" ;  clear; ${pkgs.viu}/bin/viu "$line.diag.png" ; done  
         '';
+        runtimeInputs = with pkgs; [
+          viu
+          watchman
+          python3Packages.pywatchman
+        ];
+      };
           
     in
     {
+      packages = {
+        diag = diag;
+      }
       devShell = pkgs.mkShell {
         buildInputs = with pkgs; [
           diag
