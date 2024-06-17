@@ -5,12 +5,10 @@
   outputs = { self, nixpkgs, utils }: utils.lib.eachDefaultSystem (system:
     let
       pkgs = nixpkgs.legacyPackages.${system};
-      diag = let 
-        python3 = (pkgs.python3.withPackages (python-pkgs: [
-                    python-pkgs.diagrams
-                  ]));
-
-        in pkgs.writeShellApplication {
+      python3 = (pkgs.python3.withPackages (python-pkgs: [
+        python-pkgs.diagrams
+      ]));
+      diag = pkgs.writeShellApplication {
         name = "watch-diagram";
         text = ''
         #!/bin/sh
@@ -27,10 +25,12 @@
     {
       packages = {
         diag = diag;
-      }
+      };
       devShell = pkgs.mkShell {
         buildInputs = with pkgs; [
           diag
+          python3
+          viu
         ];
       };
     }
